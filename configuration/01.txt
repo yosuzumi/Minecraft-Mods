@@ -1,5 +1,5 @@
 title:高難易度MOD構成
-description:
+description:ブロックを破壊するモブが20体ほどいますが頑張ってください。そのうち6割が自然スポーンします。
 main:メモリ使用量は推定28GB程度です。
 この構成のMOD数は<tnum>個です。
 
@@ -51,7 +51,7 @@ CullLessLeaves-Reforged-1.20.1-1.0.5.jar
 cupboard-1.20.1-3.0.jar
 curios-forge-5.14.1+1.20.1.jar
 damagenumbers-1.4.0-forge.jar
-<description:これは配布されているMODを改造して不具合と追加ポートを用意したものです。皆様も自身で改造してみてください。配布先 https://modrinth.com/mod/defend-your-base:defendyourbase-1.2.3-hotfix1-forge-1.20.1.jar:#a1cff4:false>
+<description:これは配布されているMODを改造して不具合と追加ポートを用意したものです。皆様も自身で改造してみてください。:defendyourbase-1.2.3-hotfix1-forge-1.20.1.jar:#a1cff4:false>
 dynamic-fps-3.11.4+minecraft-1.20.0-forge.jar
 embeddium-0.3.31+mc1.20.1.jar
 EnchantmentDescriptions-Forge-1.20.1-17.1.21.jar
