@@ -2,12 +2,10 @@ title:関数機能の動作テスト(無視して大丈夫です。)
 description:タグを使った<color:#007acc>カラー変更<color:reset>と説明機能のサンプル
 main:この区間の行数は <tnum> 行です。
 
-<tnum_st>
-1行目
+<tnum_st>1行目
 2行目
 3行目
-4行目
-<tnum_en>
+4行目<tnum_en>
 
 テキストの一部に <description:これは補足説明です:ここをホバー:#e67e22:true> を追加できます。
 さらに <color:#e74c3c>赤色のテキスト<color:reset> も簡単に表示できます。
