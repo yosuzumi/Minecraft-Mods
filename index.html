@@ -246,7 +246,7 @@
       return { title, description, main };
     }
 
-    // カスタムタグ（関数）の処理エンジン
+// カスタムタグ（関数）の処理エンジン
     function processCustomTags(text) {
       if (!text) return '';
 
@@ -269,11 +269,13 @@
       // 2. 安全のためHTML特殊文字を事前にエスケープ
       let html = escapeHtml(text);
 
-      // 3. <color:hex> と <color:reset> の置換 (エスケープ済みの文字列に対して適用)
-      html = html.replace(/&lt;color:(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)&gt;/g, '<span style="color: $1;">');
-      html = html.replace(/&lt;color:reset&gt;/g, '</span>');
+      // 3. <color:reset> を自動で <color:#000000> として読み替える
+      html = html.replace(/&lt;color:reset&gt;/g, '&lt;color:#000000&gt;');
 
-      // 4. <description:{description}:{display}:{clr}:{is_underbar}> の置換
+      // 4. <color:hex> の置換処理
+      html = html.replace(/&lt;color:(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)&gt;/g, '<span style="color: $1;">');
+
+      // 5. <description:{description}:{display}:{clr}:{is_underbar}> の置換
       const descRegex = /&lt;description:(.*?):(.*?):(.*?):(true|false)&gt;/g;
       html = html.replace(descRegex, (match, desc, display, clr, isUnderbar) => {
         const borderStyle = isUnderbar === 'true' ? `border-bottom: 2px dashed ${clr};` : '';
