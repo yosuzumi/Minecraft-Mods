@@ -1,0 +1,13 @@
+title:VR
+description:neoforge 1.21.1 21.1.238
+main:VR用です。ある程度のスペックがあれば動くように軽量化はしました
+メモリ使用量は推定6GB程度です。
+この構成のMOD数は<tnum>個です。
+
+<tnum_st>ferritecore-7.0.3-neoforge.jar
+iris-neoforge-1.8.12+mc1.21.1.jar
+kotlinforforge-5.12.0-all.jar
+modernfix-neoforge-5.27.15+mc1.21.1.jar
+Resourcify (1.21.1-neoforge)-1.8.5.jar
+sodium-neoforge-0.6.13+mc1.21.1.jar
+vivecraft-1.21.1-1.3.13-neoforge.jar<tnum_en>
