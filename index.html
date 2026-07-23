@@ -151,22 +151,28 @@
     const CONFIG_DIR = './configuration/';
     const LIST_FILE = CONFIG_DIR + 'list.json';
 
+    // キャッシュ回避付きの fetch 関数
+    async function fetchWithoutCache(url) {
+      const cacheBusterUrl = `${url}?_=${Date.now()}`;
+      return await fetch(cacheBusterUrl, { cache: 'no-store' });
+    }
+
     async function init() {
       try {
-        const response = await fetch(LIST_FILE);
+        const response = await fetchWithoutCache(LIST_FILE);
         if (!response.ok) throw new Error('list.json が見つかりませんでした。');
         const files = await response.json();
         
         // 全ファイルを事前に取得してタイトルを取り出す
         const fileDataList = await Promise.all(files.map(async (fileName) => {
           try {
-            const res = await fetch(CONFIG_DIR + fileName);
+            const res = await fetchWithoutCache(CONFIG_DIR + fileName);
             if (!res.ok) return null;
             const text = await res.text();
             const parsed = parseCustomTxt(text);
             return {
               fileName: fileName,
-              title: parsed.title || fileName, // titleがない場合はファイル名
+              title: parsed.title || fileName,
               rawText: text
             };
           } catch {
@@ -189,7 +195,7 @@
       items.forEach((item, index) => {
         const li = document.createElement('li');
         li.className = 'file-item';
-        li.textContent = item.title; // ファイル名ではなくtitleを表示
+        li.textContent = item.title;
         li.onclick = () => loadAndDisplayFile(item, li);
         listEl.appendChild(li);
 
@@ -244,31 +250,30 @@
     function processCustomTags(text) {
       if (!text) return '';
 
-      // 1. <tnum_st> から <tnum_en> までの行数を計算して <tnum> を置換
+      // 1. <tnum_st> から <tnum_en> までの行数を正確に計算
       if (text.includes('<tnum_st>') && text.includes('<tnum_en>')) {
-        const stIndex = text.indexOf('<tnum_st>');
+        const stIndex = text.indexOf('<tnum_st>') + '<tnum_st>'.length;
         const enIndex = text.indexOf('<tnum_en>');
         
         if (stIndex < enIndex) {
           const subText = text.substring(stIndex, enIndex);
-          // 改行の数をカウント
-          const lineCount = (subText.match(/\n/g) || []).length;
+          // 改行で分割し、完全な空行（前後の改行のみで挟まれた部分）を除外してカウント
+          const lines = subText.split(/\r?\n/).filter(line => line.trim() !== '');
+          const lineCount = lines.length;
           text = text.replace(/<tnum>/g, lineCount);
         }
       }
       // マーカータグを削除
       text = text.replace(/<tnum_st>/g, '').replace(/<tnum_en>/g, '');
 
-      // 安全のためHTML特殊文字を事前にエスケープ
+      // 2. 安全のためHTML特殊文字を事前にエスケープ
       let html = escapeHtml(text);
 
-      // 2. <color:hex> と <color:reset> の置換
-      // 例: <color:#ff0000> -> <span style="color:#ff0000">, <color:reset> -> </span>
+      // 3. <color:hex> と <color:reset> の置換 (エスケープ済みの文字列に対して適用)
       html = html.replace(/&lt;color:(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)&gt;/g, '<span style="color: $1;">');
       html = html.replace(/&lt;color:reset&gt;/g, '</span>');
 
-      // 3. <description:{description}:{display}:{clr}:{is_underbar}> の置換
-      // フォーマット: <description:説明文:表示文字:#色:true/false>
+      // 4. <description:{description}:{display}:{clr}:{is_underbar}> の置換
       const descRegex = /&lt;description:(.*?):(.*?):(.*?):(true|false)&gt;/g;
       html = html.replace(descRegex, (match, desc, display, clr, isUnderbar) => {
         const borderStyle = isUnderbar === 'true' ? `border-bottom: 2px dashed ${clr};` : '';
