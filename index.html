@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      height: 100vh;
+      color: #333;
+      background-color: #f9f9f9;
+    }
+
+    /* 左側のサイドバー */
+    sidebar {
+      width: 280px;
+      background-color: #24292e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #e1e4e8;
+    }
+    .sidebar-header {
+      padding: 16px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-bottom: 1px solid #444d56;
+      background-color: #1f2328;
+    }
+    .file-list {
+      list-style: none;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .file-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #3f4448;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .file-item:hover {
+      background-color: #2c3238;
+    }
+    .file-item.active {
+      background-color: #0366d6;
+      font-weight: bold;
+    }
+
+    /* 右側のメインコンテンツ領域 */
+    main {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .empty-state {
+      margin: auto;
+      color: #6a737d;
+      font-size: 1.1rem;
+    }
+    .content-card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e1e4e8;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #111;
+    }
+    .description {
+      font-size: 1rem;
+      color: #586069;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .divider {
+      border: 0;
+      height: 1px;
+      background: #e1e4e8;
+      margin: 20px 0;
+    }
+    .main-content {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      white-space: pre-wrap; /* 改行をそのまま反映 */
+      color: #24292e;
+    }
+  </style>
+</head>
+<body>
+
+  <sidebar>
+    <div class="sidebar-header">Configuration Files</div>
+    <ul class="file-list" id="fileList"></ul>
+  </sidebar>
+
+  <main id="mainContainer">
+    <div class="empty-state">左のリストからファイルを選択してください</div>
+  </main>
+
+  <script>
+    const CONFIG_DIR = './configuration/';
+    const LIST_FILE = CONFIG_DIR + 'list.json';
+
+    // 起動時にリストを取得してサイドバーを作成
+    async function init() {
+      try {
+        const response = await fetch(LIST_FILE);
+        if (!response.ok) throw new Error('list.json が見つかりませんでした。');
+        const files = await response.json();
+        
+        renderSidebar(files);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('fileList').innerHTML = 
+          `<li style="padding:16px; color:#f97583;">読み込みエラー: list.json が配置されているか確認してください</li>`;
+      }
+    }
+
+    // サイドバーの生成
+    function renderSidebar(files) {
+      const listEl = document.getElementById('fileList');
+      listEl.innerHTML = '';
+
+      files.forEach((fileName, index) => {
+        const li = document.createElement('li');
+        li.className = 'file-item';
+        li.textContent = fileName;
+        li.onclick = () => loadAndDisplayFile(fileName, li);
+        listEl.appendChild(li);
+
+        // 最初の要素を自動選択する場合
+        if (index === 0) {
+          loadAndDisplayFile(fileName, li);
+        }
+      });
+    }
+
+    // テキストファイルを読み込んで指定フォーマットで表示
+    async function loadAndDisplayFile(fileName, element) {
+      // アクティブ項目のスタイル切り替え
+      document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+
+      try {
+        const res = await fetch(CONFIG_DIR + fileName);
+        if (!res.ok) throw new Error('ファイルの読み込みに失敗しました');
+        const text = await res.text();
+
+        // 構文解析（パース）
+        const parsed = parseCustomTxt(text);
+
+        // 画面への描画
+        const mainContainer = document.getElementById('mainContainer');
+        mainContainer.innerHTML = `
+          <div class="content-card">
+            <h1 class="title">${escapeHtml(parsed.title)}</h1>
+            <div class="description">${escapeHtml(parsed.description)}</div>
+            <hr class="divider">
+            <div class="main-content">${escapeHtml(parsed.main)}</div>
+          </div>
+        `;
+      } catch (err) {
+        document.getElementById('mainContainer').innerHTML = `
+          <div class="empty-state" style="color: #d73a49;">エラー: ${fileName} を読み込めませんでした。</div>
+        `;
+      }
+    }
+
+    // title: / description: / main: を抽出する関数
+    function parseCustomTxt(text) {
+      let title = '';
+      let description = '';
+      let main = '';
+
+      // 正規表現でそれぞれのキー以降を取得
+      const titleMatch = text.match(/^title:\s*(.*)$/m);
+      const descMatch = text.match(/^description:\s*(.*)$/m);
+      
+      // main: はそれ以降のすべての文章（改行含む）を取得
+      const mainIndex = text.indexOf('main:');
+
+      if (titleMatch) title = titleMatch[1].trim();
+      if (descMatch) description = descMatch[1].trim();
+      if (mainIndex !== -1) {
+        main = text.substring(mainIndex + 5).trim();
+      }
+
+      return { title, description, main };
+    }
+
+    // XSS対策用エスケープ
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    init();
+  </script>
+</body>
+</html>
